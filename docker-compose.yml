@@ -8,4 +8,19 @@ services:
       - "80:80"
     volumes:
       - .:/var/www/html
+    depends_on:
+      - db
     restart: always
+
+  db:
+    image: mysql:5.7
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tourism_db
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+
+volumes:
+  db_data:
