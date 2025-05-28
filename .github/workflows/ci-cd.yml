@@ -34,9 +34,6 @@ jobs:
         git clone https://github.com/NisargaSavadatti/my-devops-proj.git
         cd my-devops-proj
 
-        echo "Building new Docker image..."
-        sudo docker build -t php-app .
-
-        echo "Running Docker container..."
-        sudo docker run -d --name php-running-app -p 80:80 php-app
+        echo "Building and starting Docker containers..."
+        sudo docker-compose up -d --build
         EOF
