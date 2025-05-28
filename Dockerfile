@@ -1,7 +1,7 @@
 # Base image
 FROM php:8.1-apache
 
-# Install dependencies
+# Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -16,11 +16,11 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Copy application source
-COPY . /var/www/html/
-
 # Set working directory
 WORKDIR /var/www/html/
+
+# Copy application source
+COPY . /var/www/html/
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
