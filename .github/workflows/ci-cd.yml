@@ -1,62 +1,45 @@
-
 name: CI/CD Pipeline
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  build-and-test:
+  deploy-to-ec2:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: rootpassword
-          MYSQL_DATABASE: devops_db
-          MYSQL_USER: devops_user
-          MYSQL_PASSWORD: devops_pass
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Install Docker & Add to Docker Group
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-          sudo usermod -aG docker $USER
-          newgrp docker
+    - name: Set up SSH access to EC2
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-      - name: Install PHP & Dependencies
-        run: |
-          sudo apt-get install -y php php-mbstring php-xml php-curl php-mysql unzip curl git
-          php -v
+    - name: Deploy on EC2 Instance
+      run: |
+        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+        
+        echo "Updating system and installing Docker..."
+        sudo yum update -y
+        sudo yum install -y docker git curl
 
-      - name: Build Docker Image
-        run: |
-          docker build -t php-app .
+        echo "Starting Docker and cleaning old containers/images..."
+        sudo systemctl start docker
+        sudo docker ps -q | xargs -r sudo docker stop
+        sudo docker images -q | xargs -r sudo docker rmi -f
 
-      - name: Run Container
-        run: |
-          docker run -d --name php-test-app -p 8080:80 php-app
-          sleep 15
+        echo "Cloning latest code..."
+        rm -rf my-devops-proj
+        git clone https://github.com/NisargaSavadatti/my-devops-proj.git
+        cd my-devops-proj
 
-      - name: Verify Running App
-        run: |
-          curl --fail http://localhost:8080 || (echo "App failed to start" && exit 1)
+        echo "Building Docker image..."
+        sudo docker build -t php-app .
 
-      - name: Cleanup
-        run: |
-          docker stop php-test-app
-          docker rm php-test-app
+        echo "Running new container..."
+        sudo docker run -d --name php-running-app -p 80:80 php-app
+
+        echo "Application deployed successfully!"
+        EOF
