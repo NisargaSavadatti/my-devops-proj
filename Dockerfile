@@ -1,9 +1,6 @@
 FROM php:8.1-apache
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
-
-# Install required PHP extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -13,19 +10,21 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     curl \
-    && docker-php-ext-install mysqli pdo pdo_mysql mbstring exif pcntl bcmath gd
+    libzip-dev \
+    libapache2-mod-php \
+    && docker-php-ext-install pdo_mysql mysqli
+
+# Enable Apache modules
+RUN a2enmod rewrite headers
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy project files
+# Copy application source
 COPY . /var/www/html/
 
-# Fix permissions
-RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html
 
-# Expose port
+# Expose port 80
 EXPOSE 80
-
-# Start Apache
-CMD ["apache2-foreground"]
