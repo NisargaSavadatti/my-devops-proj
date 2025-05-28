@@ -17,23 +17,35 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-    - name: Deploy to EC2 Instance
+    - name: Deploy on EC2 Instance
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-        echo "Installing Docker..."
-        sudo apt-get update -y
-        sudo apt-get install -y docker.io git curl
+          echo "Updating system and installing Docker and Docker Compose..."
+          sudo apt-get update -y
+          sudo apt-get install -y docker.io git curl
 
-        echo "Stopping old Docker containers and removing images..."
-        sudo docker ps -q | xargs -r sudo docker stop
-        sudo docker ps -aq | xargs -r sudo docker rm
-        sudo docker images -q | xargs -r sudo docker rmi -f
+          # Install docker-compose (latest version)
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
-        echo "Cloning latest code..."
-        rm -rf my-devops-proj
-        git clone https://github.com/NisargaSavadatti/my-devops-proj.git
-        cd my-devops-proj
+          echo "Docker Compose version:"
+          docker-compose --version
 
-        echo "Building and starting Docker containers..."
-        sudo docker-compose up -d --build
+          echo "Starting Docker service..."
+          sudo systemctl start docker
+
+          echo "Stopping old Docker containers and removing images..."
+          sudo docker ps -q | xargs -r sudo docker stop
+          sudo docker images -q | xargs -r sudo docker rmi -f
+
+          echo "Cloning latest code..."
+          rm -rf my-devops-proj
+          git clone https://github.com/NisargaSavadatti/my-devops-proj.git
+          cd my-devops-proj
+
+          echo "Building and running Docker containers with docker-compose..."
+          sudo docker-compose down
+          sudo docker-compose up -d --build
+
+          echo "Application deployed successfully!"
         EOF
