@@ -17,23 +17,20 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
 
-    - name: Deploy on EC2 Instance
+    - name: Deploy to EC2 Instance
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-        
-        echo "Updating system and installing Docker..."
+
+        echo "Updating & installing Docker..."
         sudo apt-get update -y
         sudo apt-get install -y docker.io git curl
 
-        echo "Starting Docker and cleaning old containers/images..."
-        sudo systemctl start docker
-        sudo systemctl enable docker
-
+        echo "Stopping and removing old Docker containers/images..."
         sudo docker ps -q | xargs -r sudo docker stop
         sudo docker ps -aq | xargs -r sudo docker rm
         sudo docker images -q | xargs -r sudo docker rmi -f
 
-        echo "Cloning latest code..."
+        echo "Fetching latest code..."
         rm -rf my-devops-proj
         git clone https://github.com/NisargaSavadatti/my-devops-proj.git
         cd my-devops-proj
@@ -41,8 +38,8 @@ jobs:
         echo "Building Docker image..."
         sudo docker build -t php-app .
 
-        echo "Running new container..."
+        echo "Running Docker container..."
         sudo docker run -d --name php-running-app -p 80:80 php-app
 
-        echo "Application deployed successfully!"
+        echo "Deployment complete."
         EOF
