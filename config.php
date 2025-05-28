@@ -1,20 +1,15 @@
 <?php
-// Start output buffering and session before any output
-ob_start();
+session_start();
 ini_set('date.timezone', 'Asia/Manila');
 date_default_timezone_set('Asia/Manila');
-session_start();
 
-// Include required class files
 require_once('initialize.php');
 require_once('classes/DBConnection.php');
 require_once('classes/SystemSettings.php');
 
-// Initialize DB
 $db = new DBConnection;
 $conn = $db->conn;
 
-// Functions
 function redirect($url = '') {
     if (!empty($url)) {
         echo '<script>location.href="' . base_url . $url . '"</script>';
@@ -50,7 +45,3 @@ function isMobileDevice() {
     }
     return false;
 }
-
-// End buffering only if needed
-// ob_end_flush(); // Optional
-?>
