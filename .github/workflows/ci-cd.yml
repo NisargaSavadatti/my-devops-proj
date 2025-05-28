@@ -19,15 +19,18 @@ jobs:
 
     - name: Deploy on EC2 Instance
       run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
         
         echo "Updating system and installing Docker..."
-        sudo yum update -y
-        sudo yum install -y docker git curl
+        sudo apt-get update -y
+        sudo apt-get install -y docker.io git curl
 
         echo "Starting Docker and cleaning old containers/images..."
         sudo systemctl start docker
+        sudo systemctl enable docker
+
         sudo docker ps -q | xargs -r sudo docker stop
+        sudo docker ps -aq | xargs -r sudo docker rm
         sudo docker images -q | xargs -r sudo docker rmi -f
 
         echo "Cloning latest code..."
