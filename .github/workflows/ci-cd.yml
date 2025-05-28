@@ -1,1 +1,62 @@
 
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: devops_db
+          MYSQL_USER: devops_user
+          MYSQL_PASSWORD: devops_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Docker & Add to Docker Group
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo usermod -aG docker $USER
+          newgrp docker
+
+      - name: Install PHP & Dependencies
+        run: |
+          sudo apt-get install -y php php-mbstring php-xml php-curl php-mysql unzip curl git
+          php -v
+
+      - name: Build Docker Image
+        run: |
+          docker build -t php-app .
+
+      - name: Run Container
+        run: |
+          docker run -d --name php-test-app -p 8080:80 php-app
+          sleep 15
+
+      - name: Verify Running App
+        run: |
+          curl --fail http://localhost:8080 || (echo "App failed to start" && exit 1)
+
+      - name: Cleanup
+        run: |
+          docker stop php-test-app
+          docker rm php-test-app
