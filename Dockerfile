@@ -1,7 +1,9 @@
-# Base image
 FROM php:8.1-apache
 
-# Install system dependencies and PHP extensions
+# Enable necessary Apache modules
+RUN a2enmod rewrite headers
+
+# Install required PHP extensions
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -9,22 +11,20 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    git \
-    curl \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
-
 # Set working directory
-WORKDIR /var/www/html/
+WORKDIR /var/www/html
 
-# Copy application source
+# Copy application source code
 COPY . /var/www/html/
 
-# Set permissions
+# Set appropriate permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
 # Expose port 80
 EXPOSE 80
+
+# Start Apache server
+CMD ["apache2-foreground"]
